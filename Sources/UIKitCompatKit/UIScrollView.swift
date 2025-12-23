@@ -37,3 +37,42 @@ extension UIScrollView {
 #endif
 #endif
 #endif
+
+
+import UIKit
+
+private var RefreshControlKey: UInt8 = 0
+
+extension UIScrollView {
+
+    @available(iOS, introduced: 6.0, deprecated: 10.0)
+    @_disfavoredOverload
+    public var refreshControl: UIRefreshControl? {
+        get {
+            return objc_getAssociatedObject(self, &RefreshControlKey) as? UIRefreshControl
+        }
+        set {
+            let old = refreshControl
+            old?.removeFromSuperview()
+
+            objc_setAssociatedObject(
+                self,
+                &RefreshControlKey,
+                newValue,
+                .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+            )
+
+            guard let control = newValue else { return }
+
+            if let tableView = self as? UITableView {
+                tableView.backgroundView?.addSubview(control)
+                tableView.backgroundView = UIView()
+                tableView.addSubview(control)
+            } else if let collectionView = self as? UICollectionView {
+                collectionView.addSubview(control)
+            } else {
+                addSubview(control)
+            }
+        }
+    }
+}
