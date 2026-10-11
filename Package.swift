@@ -13,7 +13,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/JWIMaster/IBPCollectionViewCompositionalLayout", branch: "master")
+        .package(url: "https://github.com/j-w-i/IBPCollectionViewCompositionalLayout", branch: "master")
     ],
     targets: [
         .target(
