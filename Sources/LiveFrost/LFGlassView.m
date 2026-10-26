@@ -6,6 +6,7 @@
 
 #import "LFGlassView.h"
 #import "LFDisplayBridge.h"
+#import <objc/runtime.h>
 
 @interface LFGlassView () <LFDisplayBridgeTriggering>
 
@@ -318,3 +319,14 @@
 
 
 @end
+
+// UIKitCompatKit: install the iOS 5 Auto Layout bridge before main.
+// This translation unit is always linked (LFGlassView is used), so the image
+// initializer cannot be dropped by -dead_strip. On iOS 6+ the callee returns
+// immediately: UIKit already provides Auto Layout and nothing is installed.
+extern void LSDKInstallAutoLayoutIfNeeded(void);
+__attribute__((constructor)) static void LSDKAutoLayoutBootstrapInit(void) {
+    if (objc_getClass("NSLayoutConstraint") == Nil) {
+        LSDKInstallAutoLayoutIfNeeded();
+    }
+}
