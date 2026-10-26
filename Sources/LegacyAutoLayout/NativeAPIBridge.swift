@@ -66,6 +66,28 @@ internal func legacyModel(for object: AnyObject) -> RRLayoutConstraint? {
     return objc_getAssociatedObject(object, &nativeConstraintModelKey) as? RRLayoutConstraint
 }
 
+/// Creates an `NSLayoutConstraint` whose storage is the legacy model, without
+/// going through UIKit's `initWithItem:...` selector. iOS 5 has no such class, so
+/// the runtime surface is ours; this keeps constraint creation independent of
+/// whatever method table the class ends up with.
+public func legacyConstraint(item: Any?, attribute: RRLayoutAttribute,
+                             relatedBy: RRLayoutRelation, toItem: Any?,
+                             attribute secondAttribute: RRLayoutAttribute,
+                             multiplier: CGFloat, constant: CGFloat) -> RRLayoutConstraint? {
+    return RRLayoutConstraint(item: item, attribute: attribute, relatedBy: relatedBy,
+                              toItem: toItem, attribute: secondAttribute,
+                              multiplier: multiplier, constant: constant)
+}
+
+/// Attaches a legacy model to the runtime `NSLayoutConstraint` instance so the
+/// bridge's methods (firstItem, constant, isActive, ...) report it.
+public func legacyAttach(model: RRLayoutConstraint) -> NSLayoutConstraint? {
+    guard let cls = NSClassFromString("NSLayoutConstraint") as? NSObject.Type else { return nil }
+    let object = cls.init()
+    objc_setAssociatedObject(object, &nativeConstraintModelKey, model, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+    return object as? NSLayoutConstraint
+}
+
 /// Makes `NSLayoutConstraint` usable on iOS 5, then installs the UIView bridge.
 ///
 /// UIKit may already expose a class by that name on an OS without Auto Layout (a

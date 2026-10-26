@@ -5,109 +5,98 @@ import UIKit
 import LegacyAutoLayout
 // Preserve native UIKit names; missing ObjC APIs are installed only on iOS 5.
 
+/// Builds the constraint for an anchor pair.
+///
+/// On iOS 6+ this is UIKit's own initializer. On iOS 5 that class does not exist,
+/// so constructing through it raised doesNotRecognizeSelector during viewDidLoad;
+/// build the legacy model instead and hand back the runtime constraint object.
+@MainActor
+private func anchorConstraint(item: UIView?, attribute: NSLayoutConstraint.Attribute,
+                              relatedBy: NSLayoutConstraint.Relation,
+                              toItem: UIView?, secondAttribute: NSLayoutConstraint.Attribute,
+                              multiplier: CGFloat, constant: CGFloat) -> NSLayoutConstraint {
+    if #available(iOS 6.0, *) {
+        return NSLayoutConstraint(item: item as Any, attribute: attribute, relatedBy: relatedBy,
+                                  toItem: toItem, attribute: secondAttribute,
+                                  multiplier: multiplier, constant: constant)
+    }
+    let model = legacyConstraint(item: item,
+                                 attribute: RRLayoutAttribute(rawValue: attribute.rawValue)!,
+                                 relatedBy: RRLayoutRelation(rawValue: relatedBy.rawValue)!,
+                                 toItem: toItem,
+                                 attribute: RRLayoutAttribute(rawValue: secondAttribute.rawValue)!,
+                                 multiplier: multiplier, constant: constant)!
+    if let bridged = legacyAttach(model: model) { return bridged }
+    preconditionFailure("The iOS 5 Auto Layout bridge could not create NSLayoutConstraint.")
+}
+
 /// Expressive Anchor backport class, aiming to provide the fluid API of the more modern, iOS 9+ based constraint system. It should function nearly identically
 @MainActor
 @available(iOS, introduced: 5.0, obsoleted: 9.0)
 public class Anchor {
     weak var view: UIView?
     let attribute: NSLayoutConstraint.Attribute
-    
+
     public init(view: UIView, attribute: NSLayoutConstraint.Attribute) {
         self.view = view
         self.attribute = attribute
     }
-    
+
     public func constraint(equalTo other: Anchor,
                            multiplier: CGFloat = 1.0,
                            constant: CGFloat = 0) -> NSLayoutConstraint {
-        let constraint = NSLayoutConstraint(
-            item: view!,
-            attribute: attribute,
-            relatedBy: .equal,
-            toItem: other.view,
-            attribute: other.attribute,
-            multiplier: multiplier,
-            constant: constant
-        )
+        let constraint = anchorConstraint(item: view, attribute: attribute, relatedBy: .equal,
+                                          toItem: other.view, secondAttribute: other.attribute,
+                                          multiplier: multiplier, constant: constant)
         constraint.legacyFirstAnchor = self
         constraint.legacySecondAnchor = other
         return constraint
     }
-    
+
     public func constraint(lessThanOrEqualTo other: Anchor,
                            multiplier: CGFloat = 1.0,
                            constant: CGFloat = 0) -> NSLayoutConstraint {
-        let constraint = NSLayoutConstraint(
-            item: view!,
-            attribute: attribute,
-            relatedBy: .lessThanOrEqual,
-            toItem: other.view,
-            attribute: other.attribute,
-            multiplier: multiplier,
-            constant: constant
-        )
+        let constraint = anchorConstraint(item: view, attribute: attribute, relatedBy: .lessThanOrEqual,
+                                          toItem: other.view, secondAttribute: other.attribute,
+                                          multiplier: multiplier, constant: constant)
         constraint.legacyFirstAnchor = self
         constraint.legacySecondAnchor = other
         return constraint
     }
-    
+
     public func constraint(greaterThanOrEqualTo other: Anchor,
                            multiplier: CGFloat = 1.0,
                            constant: CGFloat = 0) -> NSLayoutConstraint {
-        let constraint = NSLayoutConstraint(
-            item: view!,
-            attribute: attribute,
-            relatedBy: .greaterThanOrEqual,
-            toItem: other.view,
-            attribute: other.attribute,
-            multiplier: multiplier,
-            constant: constant
-        )
+        let constraint = anchorConstraint(item: view, attribute: attribute, relatedBy: .greaterThanOrEqual,
+                                          toItem: other.view, secondAttribute: other.attribute,
+                                          multiplier: multiplier, constant: constant)
         constraint.legacyFirstAnchor = self
         constraint.legacySecondAnchor = other
         return constraint
     }
-    
+
     public func constraint(equalToConstant constant: CGFloat) -> NSLayoutConstraint {
-        let constraint = NSLayoutConstraint(
-            item: view!,
-            attribute: attribute,
-            relatedBy: .equal,
-            toItem: nil,
-            attribute: .notAnAttribute,
-            multiplier: 1,
-            constant: constant
-        )
+        let constraint = anchorConstraint(item: view, attribute: attribute, relatedBy: .equal,
+                                          toItem: nil, secondAttribute: .notAnAttribute,
+                                          multiplier: 1, constant: constant)
         constraint.legacyFirstAnchor = self
         constraint.legacySecondAnchor = nil
         return constraint
     }
-    
+
     public func constraint(greaterThanOrEqualToConstant constant: CGFloat) -> NSLayoutConstraint {
-        let constraint = NSLayoutConstraint(
-            item: view!,
-            attribute: attribute,
-            relatedBy: .greaterThanOrEqual,
-            toItem: nil,
-            attribute: .notAnAttribute,
-            multiplier: 1,
-            constant: constant
-        )
+        let constraint = anchorConstraint(item: view, attribute: attribute, relatedBy: .greaterThanOrEqual,
+                                          toItem: nil, secondAttribute: .notAnAttribute,
+                                          multiplier: 1, constant: constant)
         constraint.legacyFirstAnchor = self
         constraint.legacySecondAnchor = nil
         return constraint
     }
-    
+
     public func constraint(lessThanOrEqualToConstant constant: CGFloat) -> NSLayoutConstraint {
-        let constraint = NSLayoutConstraint(
-            item: view!,
-            attribute: attribute,
-            relatedBy: .lessThanOrEqual,
-            toItem: nil,
-            attribute: .notAnAttribute,
-            multiplier: 1,
-            constant: constant
-        )
+        let constraint = anchorConstraint(item: view, attribute: attribute, relatedBy: .lessThanOrEqual,
+                                          toItem: nil, secondAttribute: .notAnAttribute,
+                                          multiplier: 1, constant: constant)
         constraint.legacyFirstAnchor = self
         constraint.legacySecondAnchor = nil
         return constraint
