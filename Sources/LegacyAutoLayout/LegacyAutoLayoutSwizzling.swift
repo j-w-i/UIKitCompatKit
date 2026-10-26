@@ -158,18 +158,44 @@ private final class LegacyUIViewRuntimeHooks: NSObject {
     // MARK: Methods added to UIView below iOS 6
 
     /// `-[UIView constraints]` replacement.
-    @objc dynamic func rr_a_constraints() -> [RRLayoutConstraint] {
-        bridgedView(self).legacyConstraints
+    @objc dynamic func rr_a_constraints() -> [AnyObject] {
+        (objc_getAssociatedObject(bridgedView(self), &nativeConstraintOwnersKey) as? [AnyObject]) ?? []
     }
 
     /// `-[UIView addConstraint:]` replacement.
-    @objc dynamic func rr_a_addConstraint(_ constraint: RRLayoutConstraint) {
-        bridgedView(self).legacyAddConstraint(constraint)
+    @objc dynamic func rr_a_addConstraint(_ constraint: AnyObject) {
+        let view = bridgedView(self)
+        if let model = legacyModel(for: constraint) {
+            view.legacyAddConstraint(model)
+            var owned = (objc_getAssociatedObject(view, &nativeConstraintOwnersKey) as? [AnyObject]) ?? []
+            if !owned.contains(where: { $0 === constraint }) { owned.append(constraint) }
+            objc_setAssociatedObject(view, &nativeConstraintOwnersKey, owned, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
+
+    @objc dynamic func rr_a_removeConstraint(_ constraint: AnyObject) {
+        let view = bridgedView(self)
+        if let model = legacyModel(for: constraint) { view.legacyRemoveConstraint(model) }
+        var owned = (objc_getAssociatedObject(view, &nativeConstraintOwnersKey) as? [AnyObject]) ?? []
+        owned.removeAll { $0 === constraint }
+        objc_setAssociatedObject(view, &nativeConstraintOwnersKey, owned, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+    }
+
+    @objc dynamic func rr_a_translatesAutoresizingMaskIntoConstraints() -> Bool {
+        bridgedView(self).legacyTranslatesAutoresizingMaskIntoConstraints
+    }
+
+    @objc dynamic func rr_a_setTranslatesAutoresizingMaskIntoConstraints(_ value: Bool) {
+        bridgedView(self).legacyTranslatesAutoresizingMaskIntoConstraints = value
     }
 
     /// `-[UIView addConstraints:]` replacement.
-    @objc dynamic func rr_a_addConstraints(_ constraints: [RRLayoutConstraint]) {
-        bridgedView(self).legacyAddConstraints(constraints)
+    @objc dynamic func rr_a_addConstraints(_ constraints: [AnyObject]) {
+        for constraint in constraints { rr_a_addConstraint(constraint) }
+    }
+
+    @objc dynamic func rr_a_removeConstraints(_ constraints: [AnyObject]) {
+        for constraint in constraints { rr_a_removeConstraint(constraint) }
     }
 
     /// `-[UIView updateConstraints]` replacement: RRAutoLayout's content-size + autoresizing hooks.
@@ -253,6 +279,10 @@ internal enum LegacyAutoLayoutInstaller {
         )
 
         // 2. Provide the Auto Layout API surface that iOS 5 does not have.
+        addMethodIfAbsent(selector: NSSelectorFromString("translatesAutoresizingMaskIntoConstraints"), implementation: #selector(LegacyUIViewRuntimeHooks.rr_a_translatesAutoresizingMaskIntoConstraints))
+        addMethodIfAbsent(selector: NSSelectorFromString("setTranslatesAutoresizingMaskIntoConstraints:"), implementation: #selector(LegacyUIViewRuntimeHooks.rr_a_setTranslatesAutoresizingMaskIntoConstraints(_:)))
+        addMethodIfAbsent(selector: NSSelectorFromString("removeConstraint:"), implementation: #selector(LegacyUIViewRuntimeHooks.rr_a_removeConstraint(_:)))
+        addMethodIfAbsent(selector: NSSelectorFromString("removeConstraints:"), implementation: #selector(LegacyUIViewRuntimeHooks.rr_a_removeConstraints(_:)))
         addMethodIfAbsent(
             selector: NSSelectorFromString("constraints"),
             implementation: #selector(LegacyUIViewRuntimeHooks.rr_a_constraints)

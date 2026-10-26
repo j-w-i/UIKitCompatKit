@@ -175,6 +175,7 @@ public final class RRLayoutConstraint: NSObject {
                   attribute secondAttribute: RRLayoutAttribute,
                   multiplier: CGFloat,
                   constant: CGFloat) {
+        retainNativeAPIBootstrap()
         self._firstItem = firstItem as AnyObject?
         self._firstAttribute = firstAttribute
         self._relation = relation

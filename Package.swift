@@ -26,6 +26,7 @@ let package = Package(
         .package(url: "https://github.com/j-w-i/IBPCollectionViewCompositionalLayout", branch: "master")
     ],
     targets: [
+        .target(name: "LegacyAutoLayoutBootstrap", path: "Sources/LegacyAutoLayoutBootstrap", publicHeadersPath: "include"),
         .target(
             name: "UIKitCompatKit",
             dependencies: ["OAStackView", "LiveFrost", "IBPCollectionViewCompositionalLayout", "LegacyAutoLayout"],
@@ -37,7 +38,7 @@ let package = Package(
         ),
         .target(
             name: "LegacyAutoLayout",
-            dependencies: ["Cassowary"],
+            dependencies: ["Cassowary", "LegacyAutoLayoutBootstrap"],
             path: "Sources/LegacyAutoLayout"
         ),
         .target(
