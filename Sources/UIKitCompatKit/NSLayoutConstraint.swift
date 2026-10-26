@@ -164,7 +164,9 @@ public extension UIView {
 // MARK: - NSLayoutConstraint isActive Backport
 private var firstAnchorKey: UInt8 = 0
 private var secondAnchorKey: UInt8 = 0
-private let activeConstraints: NSHashTable = NSHashTable<AnyObject>(options: .weakMemory)
+// Store activation state on the constraint itself. Unlike NSHashTable, associated
+// objects are available on iOS 5 and do not require a global weak collection.
+private var activeConstraintKey: UInt8 = 0
 
 @MainActor
 @available(iOS, introduced: 6.0, obsoleted: 9.0)
@@ -184,7 +186,7 @@ public extension NSLayoutConstraint {
     @available(iOS, introduced: 6.0, obsoleted: 9.0)
     @_disfavoredOverload
     var isActive: Bool {
-        get { activeConstraints.contains(self) }
+        get { (objc_getAssociatedObject(self, &activeConstraintKey) as? NSNumber)?.boolValue ?? false }
         set {
             guard let firstView = firstItem as? UIView else { return }
             firstView.translatesAutoresizingMaskIntoConstraints = false
@@ -203,14 +205,14 @@ public extension NSLayoutConstraint {
                         superview.addConstraint(self)
                     }
                 }
-                activeConstraints.add(self)
+                objc_setAssociatedObject(self, &activeConstraintKey, NSNumber(value: true), .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
             } else {
                 if toItemView == nil {
                     firstView.removeConstraint(self)
                 } else if let superview = firstView.superview {
                     superview.removeConstraint(self)
                 }
-                activeConstraints.remove(self)
+                objc_setAssociatedObject(self, &activeConstraintKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
             }
         }
     }

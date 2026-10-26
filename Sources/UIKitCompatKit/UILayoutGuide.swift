@@ -80,6 +80,7 @@ public extension UIView {
         objc_setAssociatedObject(self, &layoutGuidesKey, guides, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     }
 
+    @available(iOS, introduced: 6.0, deprecated: 9.0)
     var layoutGuides: [UILayoutGuideShim] {
         get { objc_getAssociatedObject(self, &layoutGuidesKey) as? [UILayoutGuideShim] ?? [] }
         set { objc_setAssociatedObject(self, &layoutGuidesKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }

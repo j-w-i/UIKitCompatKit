@@ -14,7 +14,7 @@ public typealias UIFontWeight = Weight
 // MARK: - UIFont Extensions
 extension UIFont {
 
-    //@available(iOS, introduced: 6.0, deprecated: 8.2)
+    @available(iOS, introduced: 6.0, deprecated: 8.2)
     @_disfavoredOverload
     public static func systemFont(ofSize size: CGFloat, weight: UIFontWeight) -> UIFont {
         switch weight {
