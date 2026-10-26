@@ -57,6 +57,10 @@ private final class LegacyConstraintTemplate: NSObject {
 private var nativeConstraintModelKey: UInt8 = 0
 internal var nativeConstraintOwnersKey: UInt8 = 0
 
+public func legacyLayoutModel(for object: AnyObject) -> RRLayoutConstraint? {
+    legacyModel(for: object)
+}
+
 internal func legacyModel(for object: AnyObject) -> RRLayoutConstraint? {
     if let model = object as? RRLayoutConstraint { return model }
     return objc_getAssociatedObject(object, &nativeConstraintModelKey) as? RRLayoutConstraint

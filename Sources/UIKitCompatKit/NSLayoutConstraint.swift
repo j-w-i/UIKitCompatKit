@@ -192,32 +192,29 @@ public extension NSLayoutConstraint {
             guard let firstView = firstItem as? UIView else { return }
             firstView.translatesAutoresizingMaskIntoConstraints = false
 
-            let toItemView = secondItem as? UIView
-
-            if newValue {
-                if toItemView == nil {
-                    // Constant constraint — add to the view itself
-                    if !firstView.constraints.contains(self) {
-                        firstView.addConstraint(self)
-                    }
-                } else {
-                    // Normal constraint — add to superview
-                    if let superview = firstView.superview, !superview.constraints.contains(self) {
-                        superview.addConstraint(self)
-                    }
-                }
-                objc_setAssociatedObject(self, &activeConstraintKey, NSNumber(value: true), .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-            } else {
-                if toItemView == nil {
-                    firstView.removeConstraint(self)
-                } else if let superview = firstView.superview {
-                    superview.removeConstraint(self)
-                }
-                objc_setAssociatedObject(self, &activeConstraintKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            // iOS 5: this instance is the runtime bridge's model; drive the engine.
+            if let model = legacyLayoutModel(for: self) {
+                if newValue { firstView.legacyAddConstraint(model) }
+                else { firstView.legacyRemoveConstraint(model) }
+                objc_setAssociatedObject(self, &activeConstraintKey,
+                                         newValue ? NSNumber(value: true) : nil,
+                                         .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                return
             }
+
+            // iOS 6-8: UIKit owns the constraint. The declarations are hidden when
+            // this file is compiled for iOS 5, so send the same selectors directly.
+            let owner: UIView
+            if secondItem == nil { owner = firstView }
+            else if let superview = firstView.superview { owner = superview }
+            else { return }
+            let selector = NSSelectorFromString(newValue ? "addConstraint:" : "removeConstraint:")
+            if owner.responds(to: selector) { _ = owner.perform(selector, with: self) }
+            objc_setAssociatedObject(self, &activeConstraintKey,
+                                     newValue ? NSNumber(value: true) : nil,
+                                     .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         }
     }
-
     
     // MARK: - Correct signatures (match UIKit)
     
