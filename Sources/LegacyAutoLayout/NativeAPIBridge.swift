@@ -65,8 +65,7 @@ internal func legacyModel(for object: AnyObject) -> RRLayoutConstraint? {
 /// Registers a class named `NSLayoutConstraint` when UIKit has no Auto Layout,
 /// then installs the UIView bridge. Pure Swift, so Link Time Optimization cannot
 /// drop it. Returns immediately on iOS 6+ where UIKit owns the class.
-@MainActor
-internal func registerNativeAutoLayoutAPI() {
+internal nonisolated func registerNativeAutoLayoutAPI() {
     guard LegacyAutoLayout.isRequired else { return }
     if NSClassFromString("NSLayoutConstraint") == nil,
        let cls = objc_allocateClassPair(NSObject.self, "NSLayoutConstraint", 0) {
