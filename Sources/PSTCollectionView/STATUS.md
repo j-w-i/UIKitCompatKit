@@ -23,3 +23,17 @@ PST itself is fine: every file compiles for armv7-apple-ios5.0 (one receiver
 cast patched for modern SDKs), and at runtime it registers classes named
 `UICollectionView`, `UICollectionViewCell`, ... below iOS 6 and re-parents its
 classes onto UIKit on iOS 6+.
+
+## Update: import-visibility problem
+
+Renaming UIKit's declarations for iOS 5 and giving the PST classes UIKit Swift
+names works, but only for modules that import the PST module. A dependency that
+writes `extension UICollectionView` while importing just UIKit fails:
+
+    DifferenceKit/Sources/Extensions/UIKitExtension.swift:128:18:
+      error: cannot find type 'UICollectionView' in scope
+
+Swift has no implicit/global import flag (`-module-alias` renames modules, not
+types), so this cannot be solved inside the package. The viable design is to ship
+PST as a *clang module in the toolchain* and have the importer substitute it for
+UIKit's declarations, so every module sees it without an import.
