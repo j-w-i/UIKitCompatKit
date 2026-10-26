@@ -42,7 +42,7 @@ typedef NS_ENUM(NSUInteger, PSTCollectionElementCategory) {
 __attribute__((swift_name("UICollectionView")))
 @interface PSTCollectionView : UIScrollView
 
-- (id)initWithFrame:(CGRect)frame collectionViewLayout:(PSTCollectionViewLayout *)layout; // the designated initializer
+- (nonnull id)initWithFrame:(CGRect)frame collectionViewLayout:(nonnull PSTCollectionViewLayout *)layout; // the designated initializer
 
 @property (nonatomic, strong) PSTCollectionViewLayout *collectionViewLayout;
 @property (nonatomic, assign) IBOutlet id<PSTCollectionViewDelegate> delegate;
@@ -61,7 +61,7 @@ __attribute__((swift_name("UICollectionView")))
 // TODO: implement!
 - (void)registerNib:(UINib *)nib forSupplementaryViewOfKind:(NSString *)kind withReuseIdentifier:(NSString *)identifier;
 
-- (id)dequeueReusableCellWithReuseIdentifier:(NSString *)identifier forIndexPath:(NSIndexPath *)indexPath;
+- (nonnull __kindof PSTCollectionViewCell *)dequeueReusableCellWithReuseIdentifier:(nonnull NSString *)identifier forIndexPath:(nonnull NSIndexPath *)indexPath;
 
 - (id)dequeueReusableSupplementaryViewOfKind:(NSString *)elementKind withReuseIdentifier:(NSString *)identifier forIndexPath:(NSIndexPath *)indexPath;
 

@@ -1,6 +1,11 @@
 // swift-tools-version: 5.6
 import PackageDescription
 
+// The UIKit APIs that used to live here (Auto Layout, UILayoutGuide, UIStackView,
+// UIScrollView refresh control, collection views, compositional layout) are now
+// part of the legacy iOS 5 toolchain itself: `import UIKit` provides them and the
+// compiler gates them by deployment target. This package keeps only the helpers
+// that are intentionally *not* SDK APIs.
 let package = Package(
     name: "UIKitCompatKit",
     platforms: [
@@ -10,49 +15,16 @@ let package = Package(
         .library(
             name: "UIKitCompatKit",
             targets: ["UIKitCompatKit"]
-        ),
-        // Pure-Swift Cassowary solver used by the legacy Auto Layout backport.
-        .library(
-            name: "Cassowary",
-            targets: ["Cassowary"]
-        ),
-        // Swift port of RRAutoLayout (iOS 6 Auto Layout backport) backed by Cassowary.
-        .library(
-            name: "LegacyAutoLayout",
-            targets: ["LegacyAutoLayout"]
-        ),
-    ],
-    dependencies: [
-        .package(url: "https://github.com/j-w-i/IBPCollectionViewCompositionalLayout", branch: "master")
+        )
     ],
     targets: [
         .target(
             name: "UIKitCompatKit",
-            dependencies: ["OAStackView", "LiveFrost", "IBPCollectionViewCompositionalLayout", "LegacyAutoLayout"],
             path: "Sources/UIKitCompatKit"
-        ),
-        .target(
-            name: "Cassowary",
-            path: "Sources/Cassowary"
-        ),
-        .target(
-            name: "LegacyAutoLayout",
-            dependencies: ["Cassowary"],
-            path: "Sources/LegacyAutoLayout"
-        ),
-        .target(
-            name: "OAStackView",
-            path: "Sources/OAStackView",
-            publicHeadersPath: "."
-        ),
-        .target(
-            name: "LiveFrost",
-            path: "Sources/LiveFrost",
-            publicHeadersPath: "."
         ),
         .testTarget(
             name: "UIKitCompatKitTests",
-            dependencies: ["UIKitCompatKit", "Cassowary", "LegacyAutoLayout"]
+            dependencies: ["UIKitCompatKit"]
         ),
     ]
 )
