@@ -2,10 +2,11 @@
 #if compiler(<6.0)
 #if !MODERN_BUILD
 import UIKit
+import LegacyAutoLayout
 
 /// Expressive Anchor backport class, aiming to provide the fluid API of the more modern, iOS 9+ based constraint system. It should function nearly identically
 @MainActor
-@available(iOS, introduced: 6.0, deprecated: 9.0)
+@available(iOS, introduced: 5.0, obsoleted: 9.0)
 public class Anchor {
     weak var view: UIView?
     let attribute: NSLayoutConstraint.Attribute
@@ -27,8 +28,8 @@ public class Anchor {
             multiplier: multiplier,
             constant: constant
         )
-        constraint.firstAnchor = self
-        constraint.secondAnchor = other
+        constraint.legacyFirstAnchor = self
+        constraint.legacySecondAnchor = other
         return constraint
     }
     
@@ -44,8 +45,8 @@ public class Anchor {
             multiplier: multiplier,
             constant: constant
         )
-        constraint.firstAnchor = self
-        constraint.secondAnchor = other
+        constraint.legacyFirstAnchor = self
+        constraint.legacySecondAnchor = other
         return constraint
     }
     
@@ -61,8 +62,8 @@ public class Anchor {
             multiplier: multiplier,
             constant: constant
         )
-        constraint.firstAnchor = self
-        constraint.secondAnchor = other
+        constraint.legacyFirstAnchor = self
+        constraint.legacySecondAnchor = other
         return constraint
     }
     
@@ -76,8 +77,8 @@ public class Anchor {
             multiplier: 1,
             constant: constant
         )
-        constraint.firstAnchor = self
-        constraint.secondAnchor = nil
+        constraint.legacyFirstAnchor = self
+        constraint.legacySecondAnchor = nil
         return constraint
     }
     
@@ -91,8 +92,8 @@ public class Anchor {
             multiplier: 1,
             constant: constant
         )
-        constraint.firstAnchor = self
-        constraint.secondAnchor = nil
+        constraint.legacyFirstAnchor = self
+        constraint.legacySecondAnchor = nil
         return constraint
     }
     
@@ -106,8 +107,8 @@ public class Anchor {
             multiplier: 1,
             constant: constant
         )
-        constraint.firstAnchor = self
-        constraint.secondAnchor = nil
+        constraint.legacyFirstAnchor = self
+        constraint.legacySecondAnchor = nil
         return constraint
     }
 }
@@ -115,47 +116,46 @@ public class Anchor {
 // MARK: - UIView extension using safe internal anchors
 @MainActor
 public extension UIView {
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
     @_disfavoredOverload
     var leadingAnchor: Anchor { Anchor(view: self, attribute: .leading) }
     
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
     @_disfavoredOverload
     var trailingAnchor: Anchor { Anchor(view: self, attribute: .trailing) }
     
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
     @_disfavoredOverload
     var topAnchor: Anchor { Anchor(view: self, attribute: .top) }
     
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
     @_disfavoredOverload
     var bottomAnchor: Anchor { Anchor(view: self, attribute: .bottom) }
     
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
     @_disfavoredOverload
     var widthAnchor: Anchor { Anchor(view: self, attribute: .width) }
     
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
     @_disfavoredOverload
     var heightAnchor: Anchor { Anchor(view: self, attribute: .height) }
     
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
     @_disfavoredOverload
     var centerXAnchor: Anchor { Anchor(view: self, attribute: .centerX) }
     
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
     @_disfavoredOverload
     var centerYAnchor: Anchor { Anchor(view: self, attribute: .centerY) }
     
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
     @_disfavoredOverload
     var leftAnchor: Anchor { Anchor(view: self, attribute: .left) }
     
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
     @_disfavoredOverload
     var rightAnchor: Anchor { Anchor(view: self, attribute: .right) }
     
-    @available(iOS, introduced: 1.0, deprecated: 2.0, message: "Beware. The cookywookywoo is a powerful string indeed. Use sparingly. (On a real note, this is just my package testing string since I replicate so many API's it's hard to tell who's implementation the app is choosing to use.")
     var cookywookywoo: String {
         "dingdongbingbong, bingbongdingdong"
     }
@@ -169,21 +169,21 @@ private var secondAnchorKey: UInt8 = 0
 private var activeConstraintKey: UInt8 = 0
 
 @MainActor
-@available(iOS, introduced: 6.0, obsoleted: 9.0)
+@available(iOS, introduced: 5.0, obsoleted: 9.0)
 public extension NSLayoutConstraint {
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
-    var firstAnchor: Anchor? {
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
+    var legacyFirstAnchor: Anchor? {
         get { objc_getAssociatedObject(self, &firstAnchorKey) as? Anchor }
         set { objc_setAssociatedObject(self, &firstAnchorKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
     }
     
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
-    var secondAnchor: Anchor? {
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
+    var legacySecondAnchor: Anchor? {
         get { objc_getAssociatedObject(self, &secondAnchorKey) as? Anchor }
         set { objc_setAssociatedObject(self, &secondAnchorKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
     }
     
-    @available(iOS, introduced: 6.0, obsoleted: 9.0)
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
     @_disfavoredOverload
     var isActive: Bool {
         get { (objc_getAssociatedObject(self, &activeConstraintKey) as? NSNumber)?.boolValue ?? false }
@@ -220,7 +220,7 @@ public extension NSLayoutConstraint {
     
     // MARK: - Correct signatures (match UIKit)
     
-    @available(iOS, introduced: 6.0, obsoleted: 8.0)
+    @available(iOS, introduced: 5.0, obsoleted: 8.0)
     @_disfavoredOverload
     class func activate(_ constraints: [NSLayoutConstraint]) {
         for c in constraints { c.isActive = true }
@@ -230,7 +230,7 @@ public extension NSLayoutConstraint {
         for c in constraints { c.isActive = true }
     }
     
-    @available(iOS, introduced: 6.0, obsoleted: 8.0)
+    @available(iOS, introduced: 5.0, obsoleted: 8.0)
     @_disfavoredOverload
     class func deactivate(_ constraints: [NSLayoutConstraint]) {
         for c in constraints { c.isActive = false }
@@ -240,4 +240,3 @@ public extension NSLayoutConstraint {
 #endif
 #endif
 #endif
-

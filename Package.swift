@@ -4,12 +4,22 @@ import PackageDescription
 let package = Package(
     name: "UIKitCompatKit",
     platforms: [
-        .iOS("7.0")
+        .iOS("5.0")
     ],
     products: [
         .library(
             name: "UIKitCompatKit",
             targets: ["UIKitCompatKit"]
+        ),
+        // Pure-Swift Cassowary solver used by the legacy Auto Layout backport.
+        .library(
+            name: "Cassowary",
+            targets: ["Cassowary"]
+        ),
+        // Swift port of RRAutoLayout (iOS 6 Auto Layout backport) backed by Cassowary.
+        .library(
+            name: "LegacyAutoLayout",
+            targets: ["LegacyAutoLayout"]
         ),
     ],
     dependencies: [
@@ -18,8 +28,17 @@ let package = Package(
     targets: [
         .target(
             name: "UIKitCompatKit",
-            dependencies: ["OAStackView", "LiveFrost", "IBPCollectionViewCompositionalLayout"],
+            dependencies: ["OAStackView", "LiveFrost", "IBPCollectionViewCompositionalLayout", "LegacyAutoLayout"],
             path: "Sources/UIKitCompatKit"
+        ),
+        .target(
+            name: "Cassowary",
+            path: "Sources/Cassowary"
+        ),
+        .target(
+            name: "LegacyAutoLayout",
+            dependencies: ["Cassowary"],
+            path: "Sources/LegacyAutoLayout"
         ),
         .target(
             name: "OAStackView",
@@ -33,7 +52,7 @@ let package = Package(
         ),
         .testTarget(
             name: "UIKitCompatKitTests",
-            dependencies: ["UIKitCompatKit"]
+            dependencies: ["UIKitCompatKit", "Cassowary", "LegacyAutoLayout"]
         ),
     ]
 )
