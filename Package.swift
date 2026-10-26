@@ -28,7 +28,7 @@ let package = Package(
     targets: [
         .target(
             name: "UIKitCompatKit",
-            dependencies: ["OAStackView", "LiveFrost", "IBPCollectionViewCompositionalLayout", "LegacyAutoLayout"],
+            dependencies: ["OAStackView", "LiveFrost", "IBPCollectionViewCompositionalLayout", "LegacyAutoLayout", "PSTCollectionView"],
             path: "Sources/UIKitCompatKit"
         ),
         .target(
@@ -39,6 +39,13 @@ let package = Package(
             name: "LegacyAutoLayout",
             dependencies: ["Cassowary"],
             path: "Sources/LegacyAutoLayout"
+        ),
+        // PSTCollectionView: registers UICollectionView-named classes at load
+        // time on iOS 5 (MIT, see Sources/PSTCollectionView/LICENSE).
+        .target(
+            name: "PSTCollectionView",
+            path: "Sources/PSTCollectionView",
+            publicHeadersPath: "."
         ),
         .target(
             name: "OAStackView",
