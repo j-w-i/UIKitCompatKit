@@ -1,11 +1,58 @@
-// Same-name iOS 5 Auto Layout support.
+// Swift shims for the iOS 5 spellings of UIView's constraint API.
 //
-// This file intentionally declares no public API. UIKit's own declarations are
-// used at every deployment target; the legacy importer makes the iOS 6
-// constraint API visible for iOS 5 builds, and the runtime supplies the
-// missing Objective-C class and UIView methods only when UIKit does not
-// provide them (see NativeAPIBridge.swift and LegacyAutoLayoutSwizzling.swift).
-//
-// iOS 6+ compilation and behavior are unchanged: nothing here is compiled into
-// a fallback, no UIKit declarations are shadowed, and the installer refuses to
-// run whenever UIKit already provides Auto Layout.
+// The legacy importer marks UIKit's declarations unavailable below iOS 6 so
+// these are the only candidates (no ambiguity), and they are obsoleted at iOS 9
+// where UIKit's own members are used instead. Each entry point installs the
+// legacy bridge on first use, which also registers the NSLayoutConstraint class
+// the iOS 5 runtime lacks.
+#if canImport(UIKit)
+import UIKit
+
+@MainActor
+public extension UIView {
+
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
+    @_disfavoredOverload
+    var translatesAutoresizingMaskIntoConstraints: Bool {
+        get {
+            LegacyAutoLayout.ensureInstalled()
+            return legacyTranslatesAutoresizingMaskIntoConstraints
+        }
+        set {
+            LegacyAutoLayout.ensureInstalled()
+            legacyTranslatesAutoresizingMaskIntoConstraints = newValue
+        }
+    }
+
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
+    @_disfavoredOverload
+    var constraints: [RRLayoutConstraint] {
+        LegacyAutoLayout.ensureInstalled()
+        return legacyConstraints
+    }
+
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
+    @_disfavoredOverload
+    func addConstraint(_ constraint: RRLayoutConstraint) {
+        legacyAddConstraint(constraint)
+    }
+
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
+    @_disfavoredOverload
+    func addConstraints(_ constraints: [RRLayoutConstraint]) {
+        legacyAddConstraints(constraints)
+    }
+
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
+    @_disfavoredOverload
+    func removeConstraint(_ constraint: RRLayoutConstraint) {
+        legacyRemoveConstraint(constraint)
+    }
+
+    @available(iOS, introduced: 5.0, obsoleted: 9.0)
+    @_disfavoredOverload
+    func removeConstraints(_ constraints: [RRLayoutConstraint]) {
+        legacyRemoveConstraints(constraints)
+    }
+}
+#endif

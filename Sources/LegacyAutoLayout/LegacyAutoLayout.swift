@@ -94,9 +94,11 @@ public enum LegacyAutoLayout {
     internal nonisolated static func ensureInstalled() {
         guard !LegacyAutoLayoutInstaller.isInstalled else { return }
         if Thread.isMainThread {
+            registerNativeAutoLayoutAPI()
             LegacyAutoLayoutInstaller.install()
         } else {
             DispatchQueue.main.sync {
+                registerNativeAutoLayoutAPI()
                 LegacyAutoLayoutInstaller.install()
             }
         }

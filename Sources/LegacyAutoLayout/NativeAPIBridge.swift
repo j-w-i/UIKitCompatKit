@@ -1,9 +1,9 @@
 import UIKit
 import ObjectiveC
-import LegacyAutoLayoutBootstrap
 
-// Referenced by the solver's initializer to retain the bootstrap archive member.
-internal func retainNativeAPIBootstrap() { LSDKAutoLayoutBootstrapLink() }
+// Kept for source compatibility with older package revisions that linked a
+// separate bootstrap object; registration now happens from Swift.
+internal func retainNativeAPIBootstrap() {}
 
 // Registered as NSLayoutConstraint only when UIKit does not provide the class.
 // The template itself has a distinct ObjC name and is inert on native systems.
@@ -62,26 +62,23 @@ internal func legacyModel(for object: AnyObject) -> RRLayoutConstraint? {
     return objc_getAssociatedObject(object, &nativeConstraintModelKey) as? RRLayoutConstraint
 }
 
-@_cdecl("LSDKInstallAutoLayoutIfNeeded")
-public func installNativeAutoLayoutAPI() {
+/// Registers a class named `NSLayoutConstraint` when UIKit has no Auto Layout,
+/// then installs the UIView bridge. Pure Swift, so Link Time Optimization cannot
+/// drop it. Returns immediately on iOS 6+ where UIKit owns the class.
+@MainActor
+internal func registerNativeAutoLayoutAPI() {
     guard LegacyAutoLayout.isRequired else { return }
-    // Called by the ObjC +load bootstrap before application code can reference
-    // the missing class or send one of the missing UIView selectors.
-    let install: @MainActor () -> Void = {
-        if NSClassFromString("NSLayoutConstraint") == nil,
-           let cls = objc_allocateClassPair(NSObject.self, "NSLayoutConstraint", 0) {
-            var count: UInt32 = 0
-            if let methods = class_copyMethodList(LegacyConstraintTemplate.self, &count) {
-                defer { free(methods) }
-                for index in 0..<Int(count) {
-                    let method = methods[index]
-                    class_addMethod(cls, method_getName(method), method_getImplementation(method), method_getTypeEncoding(method))
-                }
+    if NSClassFromString("NSLayoutConstraint") == nil,
+       let cls = objc_allocateClassPair(NSObject.self, "NSLayoutConstraint", 0) {
+        var count: UInt32 = 0
+        if let methods = class_copyMethodList(LegacyConstraintTemplate.self, &count) {
+            defer { free(methods) }
+            for index in 0..<Int(count) {
+                let method = methods[index]
+                class_addMethod(cls, method_getName(method), method_getImplementation(method),
+                                method_getTypeEncoding(method))
             }
-            objc_registerClassPair(cls)
         }
-        LegacyAutoLayout.installIfNeeded()
+        objc_registerClassPair(cls)
     }
-    // ObjC +load executes on the main thread before application startup.
-    unsafeBitCast(install, to: (() -> Void).self)()
 }
