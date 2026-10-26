@@ -552,7 +552,8 @@ internal enum LegacyAutoLayoutSemanticDirection {
 /// ad-hoc pass did: `setFrame:` rounds through `setBounds:`/`setCenter:` and would re-enter the
 /// swizzled invalidation hooks (and is wrong under a non-identity transform), whereas
 /// `bounds`/`center` are the two primitives UIKit itself uses.
-extension UIView: @MainActor LegacyLayoutItem {
+@MainActor
+extension UIView: LegacyLayoutItem {
 
     public var layoutSuperitem: LegacyLayoutItem? {
         superview
