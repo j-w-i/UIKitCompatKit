@@ -463,113 +463,38 @@ public extension UIView {   // @available(iOS, introduced: 5.0)
   without real text metrics.
 * Threading: the bridge and all UIKit entry points are `@MainActor`.
 
-### 6.1 iOS 5 drop-in names (`LegacyAutoLayoutIOS5.swift`)
+### 6.1 Runtime-routed compatibility API
 
-Goal: when the app is compiled for iOS 5, ordinary source using UIKit's constraint API
-(`NSLayoutConstraint(...)`, `view.addConstraint(...)`, `view.leadingAnchor...`,
-`NSLayoutConstraint.activate(...)`, `.defaultHigh`, …) must resolve to this backport with no `#if`
-in app code — and the same source compiled for iOS 6+ must keep resolving to UIKit.
+Do not shadow UIKit's `NSLayoutConstraint` type or `UIView` members. Swift 5.10 can
+report ambiguous lookup even when competing declarations have disjoint availability.
+Compile-time aliases also cannot choose a different concrete type when an iOS 5
+binary runs on iOS 6. The previous shadowing/forced-install design was removed.
 
-Mechanism: **availability-gated name shadowing**. Swift filters declarations that are unavailable at
-the deployment target during name lookup. UIKit annotates the constraint API `API_AVAILABLE(ios(6.0))`,
-so at deployment target < 6 those declarations are dropped and a same-named declaration in this module
-wins; at deployment target >= 6 this module's declarations are obsoleted and UIKit wins:
+Use the explicit `CompatLayout` API for code that must run on iOS 5 and newer:
 
 ```swift
-@available(iOS, introduced: 5.0, obsoleted: 6.0)
-public typealias NSLayoutConstraint = RRLayoutConstraint
-
-@available(iOS, introduced: 5.0, obsoleted: 6.0)
-public extension RRLayoutConstraint {
-    typealias Attribute = RRLayoutAttribute
-    typealias Relation  = RRLayoutRelation
-    typealias Axis      = RRLayoutAxis
-}
-
-@available(iOS, introduced: 5.0, obsoleted: 6.0)
-public extension UIView {
-    var translatesAutoresizingMaskIntoConstraints: Bool { get set }   // -> legacy*
-    var constraints: [RRLayoutConstraint] { get }
-    func addConstraint(_: RRLayoutConstraint)
-    func addConstraints(_: [RRLayoutConstraint])
-    func removeConstraint(_: RRLayoutConstraint)
-    func removeConstraints(_: [RRLayoutConstraint])
-    func setNeedsUpdateConstraints()
-    func updateConstraintsIfNeeded()
-    func updateConstraints()
-    var needsUpdateConstraints: Bool { get }
-    var intrinsicContentSize: CGSize { get }
-    func invalidateIntrinsicContentSize()
-    func contentHuggingPriority(for: RRLayoutAxis) -> UILayoutPriority
-    func setContentHuggingPriority(_: UILayoutPriority, for: RRLayoutAxis)
-    func contentCompressionResistancePriority(for: RRLayoutAxis) -> UILayoutPriority
-    func setContentCompressionResistancePriority(_: UILayoutPriority, for: RRLayoutAxis)
-}
+CompatLayout.setTranslatesAutoresizingMaskIntoConstraints(false, on: child)
+CompatLayout.activate([
+    CompatLayout.anchor(child, .bottom).constraint(equalTo: CompatLayout.anchor(parent, .bottom)),
+    CompatLayout.anchor(child, .height).constraint(equalToConstant: 50)
+])
 ```
 
-plus the `UILayoutPriority`/`Float` priority constants (`.required`, `.defaultHigh`, `.defaultLow`,
-`.fittingSizeLevel`).
+The backend is selected at **runtime**, not from the deployment target:
 
-**No duplicated backport API.** The `Anchor` class and the `isActive`/`activate(_:)`/`deactivate(_:)`
-implementation are *not* reimplemented here. `Sources/UIKitCompatKit/NSLayoutConstraint.swift` (the
-existing backport) keeps its existing legacy-build gating (`#if !macCatalyst && compiler(<6.0) &&
-!MODERN_BUILD`) — that is exactly the configuration used for the iOS 5 build — and its availability
-range spans `iOS 5.0...<9.0`; at deployment target < 6 it operates on `RRLayoutConstraint` (via the
-alias above) and at iOS 6–8 on UIKit's `NSLayoutConstraint`. One implementation, two backends. The engine-facing
-activation API is `RRLayoutConstraint.legacyIsActive` / `legacyActivate(_:)` / `legacyDeactivate(_:)`
-(used by tests and the explicit legacy API); frontend code keeps using `isActive` / `activate` /
-`deactivate`, which resolve to the single backport implementation.
+- iOS 5: `RRLayoutConstraint`, Cassowary and the lazy legacy UIView bridge.
+- iOS 6–7: real `UIKit.NSLayoutConstraint`, installed on the nearest common ancestor.
+- iOS 8+: real UIKit constraints and native `isActive` activation.
 
-**Requirements and mechanics**
+`CompatLayout` never replaces UIKit declarations or installs legacy hooks on iOS 6+.
+There is no force-install bypass. Native UIKit code continues to compile using
+UIKit's own names. Existing native iOS 6–8 anchor shims remain separate from this
+facade; importing the package alone does not activate the legacy engine.
 
-* The shim only wins when the **deployment target is below iOS 6**. Swift's filtering compares
-  against the deployment target (not the runtime OS). If a toolchain keeps the deployment target at
-  ≥ 6 while the binary runs on iOS 5, the availability mechanism cannot select these declarations;
-  fall back to the explicit `RRLayoutConstraint`/`legacy*` API, or shadow the names from the app
-  module itself (a module-local `typealias`/extension wins over UIKit's imported declarations —
-  tested; this forces the engine for that build configuration, so use it only for an iOS-5-only build).
-* `NSLayoutConstraint`/`.Attribute`/`.Relation`/`.Axis` are the names that carry the iOS 6 availability
-  annotation; they shadow correctly. C typedefs without availability annotations
-  (`NSLayoutAttribute`, `NSLayoutRelation`, `UILayoutPriority` itself) cannot be shadowed — modern
-  Swift spells those as nested types, which are covered above; the priority *constants* are provided
-  as extensions.
-* Runtime: name resolution is compile-time only. Swift has no `+load`, so the bridge installs
-  **lazily on first legacy constraint use**: `RRLayoutConstraint.activate(_:)` / `isActive = true`
-  (via `LegacyAutoLayout.ensureInstalled()`), `addConstraint(s)`, `setNeedsUpdateConstraints`,
-  `updateConstraintsIfNeeded`, `legacyLayoutIfNeeded` and the other `legacy*` entry points all trigger
-  it. `LegacyAutoLayout.installIfNeeded()` remains public for deterministic startup and is a strict
-  no-op on iOS 6+. `ensureInstalled()` is `nonisolated` and hops to the main queue if a background
-  thread activates a constraint, so the runtime installation always happens on main.
-* **Forced install for iOS 5-name builds:** because name binding is a compile-time decision, a binary
-  built with a deployment target below iOS 6 must run the backport engine on *every* OS it runs on
-  (including iOS 6+ devices). The iOS 5 name shims therefore call the internal
-  `installForLegacyNames()`, which bypasses the runtime/system-Auto-Layout guards and installs the
-  bridge. `installIfNeeded()` (the public path) keeps its runtime gate, so explicit legacy API use on
-  a modern build never swizzles UIKit.
-* Constraints activated via `NSLayoutConstraint.activate(...)` / `isActive = true` are tracked in the
-  legacy active-constraint registry and solved by the engine, but — like Apple's `isActive` semantics
-  for constraints not yet added to a hierarchy — they do not appear in any view's `constraints` array.
-  Use `addConstraint` when you need ownership/`constraints` semantics.
-* Limits: extension members cannot be overridden by subclasses (no `override func updateConstraints()`
-  or `override var intrinsicContentSize` in iOS 5 code — set `legacyIntrinsicContentSize` or use the
-  legacy update hooks); VFL, `UILayoutGuide`/margins/safe-area/first-baseline anchors are separate
-  backports and not part of the iOS 5 name layer; nib constraints still need an Objective-C trampoline
-  that registers a class literally named `NSLayoutConstraint` (Swift cannot impersonate it).
-* Both manifests declare `.iOS("5.0")` as the package platform so an iOS 5 app can depend on the
-  package. Stock Swift toolchains clamp that to their minimum deployment target at build time; the
-  shims are compiled but unavailable there, so they do not interfere on iOS 6+ targets.
-
-**Validation performed here.** The shadowing rule itself was verified with a real UIKit analogue on
-this toolchain: `UIStackView` (UIKit, iOS 9) shadowed by `@available(iOS, introduced: 7.0, obsoleted:
-9.0)` at deployment target 7 resolved to the shim, and the same client at deployment target 9 resolved
-to UIKit. The actual `LegacyAutoLayoutIOS5.swift` layer was compiled into the module (iOS 5.0 platform),
-the whole module was also compiled with `swiftc -target ...-ios7.0-simulator`, and a client compiled at
-deployment target 7 against the built module resolves every constrained name to UIKit (no ambiguity).
-Running the iOS 5 branch itself needs a toolchain that accepts deployment target 5; a one-line
-`NSLayoutConstraint(...)` snippet compiled at that target is the definitive check.
- Stock Swift toolchains clamp that to their minimum deployment target at build time; the
-  shims are compiled but unavailable there, so they do not interfere on iOS 6+ targets (verified by
-  compiling a client at deployment target iOS 7 in which every name resolved to UIKit).
+Keep compatibility handles when changing constants or deactivating constraints.
+The current facade covers equal anchor/constant constraints and constant mutation;
+VFL, safe areas and NIB class impersonation are not implemented by the facade.
+Device execution remains a separate validation requirement.
 
 ## 7. Building and testing (commands)
 
