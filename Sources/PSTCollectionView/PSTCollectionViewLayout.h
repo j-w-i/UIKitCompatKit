@@ -54,6 +54,7 @@ typedef NS_ENUM(NSUInteger, PSTCollectionViewItemType) {
 - (BOOL)isCell;
 @end
 
+__attribute__((swift_name("UICollectionViewLayout")))
 @interface PSTCollectionViewLayout : NSObject <NSCoding>
 
 // Methods in this class are meant to be overridden and will be called by its collection view to gather layout information.

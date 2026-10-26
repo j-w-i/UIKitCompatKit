@@ -39,6 +39,7 @@ typedef NS_ENUM(NSUInteger, PSTCollectionElementCategory) {
 
 // API-compatible replacement for UICollectionView.
 // Works on iOS 4.3 upwards (including iOS 6).
+__attribute__((swift_name("UICollectionView")))
 @interface PSTCollectionView : UIScrollView
 
 - (id)initWithFrame:(CGRect)frame collectionViewLayout:(PSTCollectionViewLayout *)layout; // the designated initializer

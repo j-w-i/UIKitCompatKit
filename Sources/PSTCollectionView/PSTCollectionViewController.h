@@ -10,6 +10,7 @@
 @class PSTCollectionViewLayout, PSTCollectionViewController;
 
 // Simple controller-wrapper around PSTCollectionView.
+__attribute__((swift_name("UICollectionViewController")))
 @interface PSTCollectionViewController : UIViewController <PSTCollectionViewDelegate, PSTCollectionViewDataSource>
 
 // Designated initializer.

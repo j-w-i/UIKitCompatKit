@@ -15,6 +15,7 @@ typedef NS_ENUM(NSInteger, PSTCollectionViewScrollDirection) {
     PSTCollectionViewScrollDirectionHorizontal
 };
 
+__attribute__((swift_name("UICollectionViewDelegateFlowLayout")))
 @protocol PSTCollectionViewDelegateFlowLayout <PSTCollectionViewDelegate>
 @optional
 
@@ -29,6 +30,7 @@ typedef NS_ENUM(NSInteger, PSTCollectionViewScrollDirection) {
 
 @class PSTGridLayoutInfo;
 
+__attribute__((swift_name("UICollectionViewFlowLayout")))
 @interface PSTCollectionViewFlowLayout : PSTCollectionViewLayout
 
 @property (nonatomic) CGFloat minimumLineSpacing;

@@ -9,6 +9,7 @@
 
 @class PSTCollectionViewLayout, PSTCollectionView, PSTCollectionViewLayoutAttributes;
 
+__attribute__((swift_name("UICollectionReusableView")))
 @interface PSTCollectionReusableView : UIView
 
 @property (nonatomic, readonly, copy) NSString *reuseIdentifier;
@@ -30,6 +31,7 @@
 @end
 
 
+__attribute__((swift_name("UICollectionViewCell")))
 @interface PSTCollectionViewCell : PSTCollectionReusableView
 
 @property (nonatomic, readonly) UIView *contentView; // add custom subviews to the cell's contentView

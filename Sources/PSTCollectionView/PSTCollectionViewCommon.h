@@ -14,6 +14,7 @@
 
 @class PSTCollectionView, PSTCollectionViewCell, PSTCollectionReusableView;
 
+__attribute__((swift_name("UICollectionViewDataSource")))
 @protocol PSTCollectionViewDataSource <NSObject>
 @required
 
@@ -31,6 +32,7 @@
 
 @end
 
+__attribute__((swift_name("UICollectionViewDelegate")))
 @protocol PSTCollectionViewDelegate <UIScrollViewDelegate>
 @optional
 

@@ -28,7 +28,7 @@ let package = Package(
     targets: [
         .target(
             name: "UIKitCompatKit",
-            dependencies: ["OAStackView", "LiveFrost", "IBPCollectionViewCompositionalLayout", "LegacyAutoLayout"],
+            dependencies: ["OAStackView", "LiveFrost", "IBPCollectionViewCompositionalLayout", "LegacyAutoLayout", "PSTCollectionView"],
             path: "Sources/UIKitCompatKit"
         ),
         .target(
@@ -39,6 +39,13 @@ let package = Package(
             name: "LegacyAutoLayout",
             dependencies: ["Cassowary"],
             path: "Sources/LegacyAutoLayout"
+        ),
+        // PSTCollectionView supplies the iOS 5 collection view; its declarations
+        // carry the UIKit Swift names (see Sources/PSTCollectionView/STATUS.md).
+        .target(
+            name: "PSTCollectionView",
+            path: "Sources/PSTCollectionView",
+            publicHeadersPath: "."
         ),
         .target(
             name: "OAStackView",
