@@ -109,13 +109,7 @@ public enum LegacyAutoLayout {
     /// even on an iOS 6+ device (name binding is decided at compile time, not at runtime). The
     /// public `installIfNeeded()` keeps its runtime gate for the explicit path.
     internal nonisolated static func installForLegacyNames() {
-        if Thread.isMainThread {
-            LegacyAutoLayoutInstaller.install(force: true)
-        } else {
-            DispatchQueue.main.sync {
-                LegacyAutoLayoutInstaller.install(force: true)
-            }
-        }
+        ensureInstalled()
     }
 
     /// Reverts the runtime installation, for tests of the installer itself.

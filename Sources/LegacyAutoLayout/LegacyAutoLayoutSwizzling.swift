@@ -217,16 +217,14 @@ internal enum LegacyAutoLayoutInstaller {
 
     // MARK: Public (module-internal) entry points
 
-    internal static func install(force: Bool = false) {
+    internal static func install() {
         guard !installed else { return }
-        guard force || LegacyAutoLayout.isRequired else { return }
+        guard LegacyAutoLayout.isRequired else { return }
         // Belt and braces on top of the availability gate: if UIKit already answers the constraint-
         // based-layout questions, the system machinery is authoritative and the backport must not
         // install anything (RRAutoLayout's check, expressed as "does the system have Auto Layout?").
-        // `force` is only used by binaries compiled against the iOS 5 name shims: those bind the
-        // backport types at *compile time*, so they must run the backport engine even on an iOS 6+
-        // runtime (see LegacyAutoLayout.installForLegacyNames()).
-        guard force || !systemHasConstraintBasedLayout() else { return }
+        // There is intentionally no force-install path on iOS 6+.
+        guard !systemHasConstraintBasedLayout() else { return }
 
         // 1. Exchange the lifecycle that drives the legacy pass.
         exchangeIfPresent(
