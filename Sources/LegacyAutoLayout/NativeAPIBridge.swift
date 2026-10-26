@@ -66,22 +66,38 @@ internal func legacyModel(for object: AnyObject) -> RRLayoutConstraint? {
     return objc_getAssociatedObject(object, &nativeConstraintModelKey) as? RRLayoutConstraint
 }
 
-/// Registers a class named `NSLayoutConstraint` when UIKit has no Auto Layout,
-/// then installs the UIView bridge. Pure Swift, so Link Time Optimization cannot
-/// drop it. Returns immediately on iOS 6+ where UIKit owns the class.
+/// Makes `NSLayoutConstraint` usable on iOS 5, then installs the UIView bridge.
+///
+/// UIKit may already expose a class by that name on an OS without Auto Layout (a
+/// stub), so never assume the class is absent: add the constraint surface to
+/// whatever class carries the name, and create it only when there is none.
+/// Swift resolves the initializer by selector, so a class lacking
+/// `initWithItem:attribute:relatedBy:toItem:attribute:multiplier:constant:`
+/// raises doesNotRecognizeSelector inside the caller's `init` call.
 internal nonisolated func registerNativeAutoLayoutAPI() {
     guard LegacyAutoLayout.isRequired else { return }
-    if NSClassFromString("NSLayoutConstraint") == nil,
-       let cls = objc_allocateClassPair(NSObject.self, "NSLayoutConstraint", 0) {
-        var count: UInt32 = 0
-        if let methods = class_copyMethodList(LegacyConstraintTemplate.self, &count) {
-            defer { free(methods) }
-            for index in 0..<Int(count) {
-                let method = methods[index]
-                class_addMethod(cls, method_getName(method), method_getImplementation(method),
-                                method_getTypeEncoding(method))
-            }
-        }
-        objc_registerClassPair(cls)
+
+    let existing = NSClassFromString("NSLayoutConstraint")
+    let cls: AnyClass
+    if let existing = existing {
+        cls = existing
+    } else {
+        guard let created = objc_allocateClassPair(NSObject.self, "NSLayoutConstraint", 0) else { return }
+        cls = created
     }
+
+    var count: UInt32 = 0
+    if let methods = class_copyMethodList(LegacyConstraintTemplate.self, &count) {
+        defer { free(methods) }
+        for index in 0..<Int(count) {
+            let method = methods[index]
+            let selector = method_getName(method)
+            // Never replace an implementation the OS already provides.
+            guard class_getInstanceMethod(cls, selector) == nil else { continue }
+            class_addMethod(cls, selector, method_getImplementation(method),
+                            method_getTypeEncoding(method))
+        }
+    }
+
+    if existing == nil { objc_registerClassPair(cls) }
 }
