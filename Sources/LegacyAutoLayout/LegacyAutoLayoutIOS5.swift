@@ -19,11 +19,11 @@
 import UIKit
 import ObjectiveC
 
-/// IMP of an existing UIView method, or nil when the running OS does not have it.
-private func legacyShimIMP<T>(_ object: AnyObject, _ selector: String, as type: T.Type) -> T? {
+/// Implementation of an existing UIView method, or nil when this OS lacks it.
+private func legacyShimImplementation(_ object: AnyObject, _ selector: String) -> IMP? {
     let name = NSSelectorFromString(selector)
     guard let method = class_getInstanceMethod(type(of: object), name) else { return nil }
-    return unsafeBitCast(method_getImplementation(method), to: T.self)
+    return method_getImplementation(method)
 }
 
 @MainActor
@@ -36,8 +36,8 @@ public extension UIView {
             if #available(iOS 6.0, *) {
                 typealias Getter = @convention(c) (AnyObject, Selector) -> Bool
                 let selector = "translatesAutoresizingMaskIntoConstraints"
-                if let getter = legacyShimIMP(self, selector, as: Getter.self) {
-                    return getter(self, NSSelectorFromString(selector))
+                if let implementation = legacyShimImplementation(self, selector) {
+                    return unsafeBitCast(implementation, to: Getter.self)(self, NSSelectorFromString(selector))
                 }
             }
             LegacyAutoLayout.ensureInstalled()
@@ -47,8 +47,8 @@ public extension UIView {
             if #available(iOS 6.0, *) {
                 typealias Setter = @convention(c) (AnyObject, Selector, Bool) -> Void
                 let selector = "setTranslatesAutoresizingMaskIntoConstraints:"
-                if let setter = legacyShimIMP(self, selector, as: Setter.self) {
-                    setter(self, NSSelectorFromString(selector), newValue)
+                if let implementation = legacyShimImplementation(self, selector) {
+                    unsafeBitCast(implementation, to: Setter.self)(self, NSSelectorFromString(selector), newValue)
                     return
                 }
             }
@@ -70,8 +70,8 @@ public extension UIView {
         if #available(iOS 6.0, *) {
             typealias Function = @convention(c) (AnyObject, Selector, AnyObject) -> Void
             let selector = "addConstraint:"
-            if let function = legacyShimIMP(self, selector, as: Function.self) {
-                function(self, NSSelectorFromString(selector), constraint)
+            if let implementation = legacyShimImplementation(self, selector) {
+                unsafeBitCast(implementation, to: Function.self)(self, NSSelectorFromString(selector), constraint)
                 return
             }
         }
@@ -90,8 +90,8 @@ public extension UIView {
         if #available(iOS 6.0, *) {
             typealias Function = @convention(c) (AnyObject, Selector, AnyObject) -> Void
             let selector = "removeConstraint:"
-            if let function = legacyShimIMP(self, selector, as: Function.self) {
-                function(self, NSSelectorFromString(selector), constraint)
+            if let implementation = legacyShimImplementation(self, selector) {
+                unsafeBitCast(implementation, to: Function.self)(self, NSSelectorFromString(selector), constraint)
                 return
             }
         }
